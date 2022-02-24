@@ -1,0 +1,27 @@
+plugins {
+    id 'groovy'
+    id 'java'
+}
+
+group 'com.kazurayam'
+version '0.1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '4.1.2'
+    implementation group: 'com.kazurayam', name: 'materialstore', version: '0.3.5'
+    implementation group: 'ru.yandex.qatools.ashot', name: 'ashot', version: '1.5.4'
+    implementation group: 'io.github.java-diff-utils', name: 'java-diff-utils', version: '4.11'
+    implementation group: 'org.jsoup', name: 'jsoup', version: '1.14.3'
+    testImplementation 'org.codehaus.groovy:groovy-all:2.4.20'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+}
+
+test {
+    useJUnitPlatform()
+}
