@@ -13,7 +13,8 @@ repositories {
 
 dependencies {
     implementation group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '4.1.2'
-    implementation group: 'com.kazurayam', name: 'materialstore', version: '0.3.5'
+    implementation group: 'io.github.bonigarcia', name: 'webdrivermanager', version: '5.1.0'
+    implementation group: 'com.kazurayam', name: 'materialstore', version: '0.3.6'
     implementation group: 'ru.yandex.qatools.ashot', name: 'ashot', version: '1.5.4'
     implementation group: 'io.github.java-diff-utils', name: 'java-diff-utils', version: '4.11'
     implementation group: 'org.jsoup', name: 'jsoup', version: '1.14.3'
