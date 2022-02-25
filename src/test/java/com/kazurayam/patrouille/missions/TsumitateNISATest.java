@@ -18,9 +18,14 @@ import java.nio.file.Paths;
 public class TsumitateNISATest {
 
     private static Store store;
+    private final static Boolean verbose = false;
 
     @BeforeAll
     public static void beforeAll() throws IOException {
+        // if verbose logging required, change the log level
+        if (verbose) {
+            System.setProperty("org.slf4j.simpleLogger.log.com.kazurayam.materialstore.filesystem.StoreImpl", "DEBUG");
+        }
         Path projectDir = Paths.get(System.getProperty("user.dir"));
         Path outputDir = projectDir.resolve("build/tmp/testOutput")
                 .resolve(TsumitateNISATest.class.getName());
@@ -28,6 +33,7 @@ public class TsumitateNISATest {
         Path root = outputDir.resolve("store");
         store = Stores.newInstance(root);
         WebDriverManager.chromedriver().setup();
+
     }
 
     @BeforeEach
