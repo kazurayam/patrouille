@@ -2,7 +2,6 @@ package com.kazurayam.patrouille.missions;
 
 import com.kazurayam.ashotwrapper.AShotWrapper;
 import com.kazurayam.materialstore.MaterialstoreFacade;
-import com.kazurayam.materialstore.MaterialstoreFacade.DiffResult;
 import com.kazurayam.materialstore.filesystem.FileType;
 import com.kazurayam.materialstore.filesystem.JobName;
 import com.kazurayam.materialstore.filesystem.JobTimestamp;
@@ -45,11 +44,13 @@ public class TsumitateNISA extends AbstractMission {
     }
 
     @Override
-    public JobTimestamp carryout(WebDriver browser, Store store) throws IOException {
+    public void carryout(WebDriver browser, Store store) throws IOException {
         JobTimestamp  jobTimestamp = materialize(browser, this.url(), store);
-        DiffResult diffResult = cook(store, this.jobName(), jobTimestamp, this.url());
-        assert diffResult != null;
-        return jobTimestamp;
+        ArtifactGroup reduced = reduce(store, this.jobName(), jobTimestamp, this.url());
+        int warnings = report(store, this.jobName(), reduced);
+        if (warnings > 0) {
+            logger.warn(String.format("warnings=%d", warnings));
+        }
     }
 
     private JobTimestamp materialize(WebDriver browser, URL baseURL, Store store) throws IOException {
@@ -64,14 +65,20 @@ public class TsumitateNISA extends AbstractMission {
                 FileType.PNG, screenshotMetadata, screenshotFile);
 
         // download 4 EXCEL files
-        List<By> targets = Arrays.asList(
-                By.xpath("(//a[text()='EXCEL'])[1]"),
-                By.xpath("(//a[text()='EXCEL'])[2]"),
-                By.xpath("(//a[text()='EXCEL'])[3]"),
-                By.xpath("(//a[text()='EXCEL'])[4]")
-        );
+        List<Target> targets = Arrays.asList(
+                new Target(By.xpath("(//a[text()='EXCEL'])[1]"), FileType.XLSX),
+                new Target(By.xpath("(//a[text()='EXCEL'])[2]"), FileType.XLSX),
+                new Target(By.xpath("(//a[text()='EXCEL'])[3]"), FileType.XLSX),
+                new Target(By.xpath("(//a[text()='EXCEL'])[4]"), FileType.XLSX),
+                new Target(By.xpath("(//a[text()='PDF'])[1]"), FileType.PDF),
+                new Target(By.xpath("(//a[text()='PDF'])[2]"), FileType.PDF),
+                new Target(By.xpath("(//a[text()='PDF'])[3]"), FileType.PDF),
+                new Target(By.xpath("(//a[text()='PDF'])[4]"), FileType.PDF)
+                );
+
         for (int i = 0; i < targets.size(); i++) {
-            WebElement anchor = browser.findElement(targets.get(i));
+            Target target = targets.get(i);
+            WebElement anchor = browser.findElement(target.by());
             assert anchor != null;
             String relativeUrl = anchor.getAttribute("href");
             assert relativeUrl != null;
@@ -88,7 +95,7 @@ public class TsumitateNISA extends AbstractMission {
                     Metadata.builderWithUrl(resolved)
                             .put("seq", (i + 1) + "")
                             .build();
-            store.write(this.jobName(), jobTimestamp, FileType.XLSX,
+            store.write(this.jobName(), jobTimestamp, target.fileType(),
                     excelMetadata, tempFile);
         }
         return jobTimestamp;
@@ -97,7 +104,7 @@ public class TsumitateNISA extends AbstractMission {
     /**
      *
      */
-    DiffResult cook(Store store, JobName jobName, JobTimestamp latestTimestamp, URL url) {
+    ArtifactGroup reduce(Store store, JobName jobName, JobTimestamp latestTimestamp, URL url) {
         Metadata metadata = Metadata.builderWithUrl(url).build();
         QueryOnMetadata query = QueryOnMetadata.builderWithMetadata(metadata).build();
         logger.debug(String.format("[resolve] jobName=%s", jobName.toString()));
@@ -109,7 +116,11 @@ public class TsumitateNISA extends AbstractMission {
         assert timestampsAll.size() > 0;
 
         List<JobTimestamp> timestampsPriorTo = store.queryAllJobTimestampsPriorTo(jobName, query, latestTimestamp);
-        assert timestampsPriorTo.size() > 0;
+        // No previous directory of JobTimestamp found
+        if (timestampsPriorTo.size() == 0) {
+            logger.warn("no directory of previous JobTimestamp found");
+            return null;
+        }
 
         JobTimestamp previousTimestamp =
                 store.queryJobTimestampPriorTo(jobName, query, latestTimestamp);
@@ -134,6 +145,10 @@ public class TsumitateNISA extends AbstractMission {
                         .ignoreKeys("URL.protocol", "URL.host", "URL.port")
                         .build();
 
+        return facade.reduce(prepared);
+    }
+
+    private int report(Store store, JobName jobName, ArtifactGroup artifactGroup) {
         // if the difference is greater than this criteria value (unit %)
         // the difference should be marked
         double criteria = 0.1d;
@@ -142,17 +157,32 @@ public class TsumitateNISA extends AbstractMission {
         String fileName = jobName.toString() + "-index.html";
 
         // make diff and compile report
-        DiffResult diffResult = facade.makeDiffAndReport(jobName, prepared, criteria, fileName);
+        MaterialstoreFacade facade = MaterialstoreFacade.newInstance(store);
+        Path report = facade.report(jobName, artifactGroup, criteria, fileName);
 
-        assert Files.exists(diffResult.report());
-        System.out.println("The report can be found at ${result.report()}");
+        assert Files.exists(report);
+        System.out.printf("The report can be found at %s%n", report);
 
         // if any significant difference found, should warn it
-        int warnings = diffResult.warnings();
+        int warnings = artifactGroup.countWarnings(criteria);
         if (warnings > 0) {
-            System.err.println("found ${warnings} differences");
+            System.err.printf("found %d differences%n", warnings);
         }
-        return diffResult;
+        return warnings;
     }
 
+    private static class Target {
+        private final By by;
+        private final FileType fileType;
+        Target(By by, FileType fileType) {
+            this.by = by;
+            this.fileType = fileType;
+        }
+        By by() {
+            return by;
+        }
+        FileType fileType() {
+            return fileType;
+        }
+    }
 }

@@ -15,6 +15,6 @@ public interface Mission {
 
     URL url() throws MalformedURLException;
 
-    JobTimestamp carryout(WebDriver driver, Store store) throws IOException;
+    void carryout(WebDriver driver, Store store) throws IOException;
 
 }

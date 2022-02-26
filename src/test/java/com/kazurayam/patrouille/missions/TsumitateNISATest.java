@@ -44,6 +44,7 @@ public class TsumitateNISATest {
         WebDriver browser = new ChromeDriver();
         Mission mission = new TsumitateNISA();
         mission.carryout(browser, store);
+        browser.quit();
     }
 }
 
