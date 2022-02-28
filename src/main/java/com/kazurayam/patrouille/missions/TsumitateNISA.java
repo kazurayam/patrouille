@@ -60,7 +60,7 @@ public class TsumitateNISA extends AbstractMission {
         // take the full-page screenshot image PNG
         File screenshotFile = Files.createTempFile(null, null).toFile();
         AShotWrapper.saveEntirePageImage(browser, screenshotFile);
-        Metadata screenshotMetadata = Metadata.builderWithUrl(baseURL).build();
+        Metadata screenshotMetadata = Metadata.builder(baseURL).build();
         store.write(this.jobName(), jobTimestamp,
                 FileType.PNG, screenshotMetadata, screenshotFile);
 
@@ -92,7 +92,7 @@ public class TsumitateNISA extends AbstractMission {
             assert tempFile.toFile().length() > 0;
             assert size == tempFile.toFile().length();
             Metadata excelMetadata =
-                    Metadata.builderWithUrl(resolved)
+                    Metadata.builder(resolved)
                             .put("seq", (i + 1) + "")
                             .build();
             store.write(this.jobName(), jobTimestamp, target.fileType(),
@@ -105,7 +105,7 @@ public class TsumitateNISA extends AbstractMission {
      *
      */
     ArtifactGroup reduce(Store store, JobName jobName, JobTimestamp latestTimestamp, URL url) {
-        Metadata metadata = Metadata.builderWithUrl(url).build();
+        Metadata metadata = Metadata.builder(url).build();
         QueryOnMetadata query = QueryOnMetadata.builderWithMetadata(metadata).build();
         logger.debug(String.format("[resolve] jobName=%s", jobName.toString()));
         logger.debug(String.format("[resolve] url=%s", url.toString()));
